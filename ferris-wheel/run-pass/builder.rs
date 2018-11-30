@@ -5,6 +5,31 @@ struct Builder {
     number: Option<usize>,
 }
 
+impl Builder {
+    fn default() -> Builder {
+        Builder{ string: None, number: None }
+    }
+
+    fn string(&self, s: &str) -> Builder {
+        Builder { string: Some(String::from(s)), ..*self }
+    }
+
+    fn number(&self, n: usize) -> Builder {
+        Builder { number: Some(n), ..*self }
+    }
+}
+
+impl ToString for Builder {
+    fn to_string(&self) -> String {
+        match (self.string, self.number) {
+            (Some(s), Some(n)) => format!("{} {}", s, n),
+            (Some(s), None) => s,
+            (None, Some(n)) => format!("{}", n),
+            (None, None) => String::from("")
+        }
+    }
+}
+
 // Do not modify this function.
 fn main() {
     let empty = Builder::default().to_string();

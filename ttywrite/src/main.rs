@@ -7,8 +7,9 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use structopt::StructOpt;
-use serial::core::{CharSize, BaudRate, StopBits, FlowControl, SerialDevice, SerialPortSettings};
-use xmodem::{Xmodem, Progress};
+use serial::core::{CharSize, BaudRate, StopBits, FlowControl};
+use serial::prelude::*;
+use xmodem::Xmodem;
 
 mod parsers;
 
@@ -49,10 +50,42 @@ struct Opt {
 
 fn main() {
     use std::fs::File;
-    use std::io::{self, BufReader, BufRead};
+    use std::io::{self, BufReader, BufRead, Write};
 
     let opt = Opt::from_args();
     let mut serial = serial::open(&opt.tty_path).expect("path points to invalid TTY");
 
+    serial.reconfigure(&|settings| {
+        try!(settings.set_baud_rate(opt.baud_rate));
+        settings.set_char_size(opt.char_width);
+        settings.set_parity(serial::ParityNone);
+        settings.set_stop_bits(opt.stop_bits);
+        settings.set_flow_control(opt.flow_control);
+        Ok(())
+    }).expect("Unsupported baud rate");
+
+    serial.set_timeout(Duration::from_secs(opt.timeout)).expect("unsupported... timeout...");
+
+    let mut input: Box<BufRead> = match opt.input {
+        Some(filename) => Box::new(BufReader::new(File::open(filename).unwrap())),
+        None => Box::new(BufReader::new(io::stdin())),
+    };
+
     // FIXME: Implement the `ttywrite` utility.
+    if opt.raw {
+        loop {
+            let length = {
+                let buffer = input.fill_buf().expect("read error");
+                serial.write(buffer).expect("write error");
+                buffer.len()
+            };
+            input.consume(length);
+            if length == 0 { break };
+        }
+    } else {
+        Xmodem::transmit_with_progress(
+            input, serial, 
+            |progress| println!("Progress: {:?}", progress)
+        ).expect("something's not quite right!");
+    }
 }
