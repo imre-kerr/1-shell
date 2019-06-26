@@ -10,20 +10,20 @@ impl Builder {
         Builder{ string: None, number: None }
     }
 
-    fn string(&self, s: &str) -> Builder {
-        Builder { string: Some(String::from(s)), ..*self }
+    fn string<S>(self, s: S) -> Builder where S: ToString {
+        Builder { string: Some(s.to_string()), ..self }
     }
 
-    fn number(&self, n: usize) -> Builder {
-        Builder { number: Some(n), ..*self }
+    fn number(self, n: usize) -> Builder {
+        Builder { number: Some(n), ..self }
     }
 }
 
 impl ToString for Builder {
     fn to_string(&self) -> String {
-        match (self.string, self.number) {
+        match (self.string.as_ref(), self.number) {
             (Some(s), Some(n)) => format!("{} {}", s, n),
-            (Some(s), None) => s,
+            (Some(s), None) => s.to_string(),
             (None, Some(n)) => format!("{}", n),
             (None, None) => String::from("")
         }
