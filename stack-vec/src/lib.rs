@@ -1,4 +1,3 @@
-#![cfg_attr(test, feature(inclusive_range_syntax))]
 #![no_std]
 
 #[cfg(test)]
