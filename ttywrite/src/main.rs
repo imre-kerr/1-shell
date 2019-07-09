@@ -66,7 +66,7 @@ fn main() {
 
     serial.set_timeout(Duration::from_secs(opt.timeout)).expect("unsupported... timeout...");
 
-    let mut input: Box<BufRead> = match opt.input {
+    let mut input: Box<dyn BufRead> = match opt.input {
         Some(filename) => Box::new(BufReader::new(File::open(filename).unwrap())),
         None => Box::new(BufReader::new(io::stdin())),
     };
